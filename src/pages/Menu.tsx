@@ -1,153 +1,176 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Plus, Minus, Award } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppState } from '@/context/AppContext';
-import { useLanguage } from '@/context/LanguageContext';
-import { CATEGORIES, CATEGORY_KEYS, type LocalizedMenuItem } from '@/data/sampleData';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShoppingCart, Plus, Minus, Star, Award, Search, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import LanguageToggle from '@/components/LanguageToggle';
-import AdBanner from '@/components/AdBanner';
-import type { TranslationKey } from '@/i18n/translations';
+import { useApp } from '@/context/AppContext';
 
-const MenuItemCard = ({ item, onAdd, cartQty }: { item: LocalizedMenuItem; onAdd: (item: LocalizedMenuItem) => void; cartQty: number }) => {
-  const { updateCartQuantity } = useAppState();
-  const { t } = useLanguage();
-  const categoryEmoji: Record<string, string> = {
-    Coffee: '☕', 'Cold Drinks': '🧊', Pastries: '🥐', Food: '🍽️',
+const CATEGORIES = ['All', 'Coffee', 'Cold Drinks', 'Pastries', 'Food'];
+
+export default function Menu() {
+  const navigate = useNavigate();
+  const { user, menuItems, cart, addToCart, removeFromCart, updateCartQuantity, cartTotal, cartCount, logout } = useApp();
+  const [category, setCategory] = useState('All');
+  const [search, setSearch] = useState('');
+
+  const filteredItems = useMemo(() => {
+    return menuItems.filter(item => {
+      const matchesCategory = category === 'All' || item.category === category;
+      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [menuItems, category, search]);
+
+  const getCartQty = (itemId: string) => {
+    return cart.find(c => c.menuItem.id === itemId)?.quantity || 0;
+  };
+
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'vip': return 'bg-purple-100 text-purple-700';
+      case 'regular': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`glass-card rounded-2xl p-4 flex gap-4 ${!item.available ? 'opacity-50' : ''}`}
-    >
-      {item.image_url ? (
-        <img src={item.image_url} alt={item.name} className="w-20 h-20 rounded-xl object-cover shrink-0" loading="lazy" width={80} height={80} />
-      ) : (
-        <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center text-3xl shrink-0">
-          {categoryEmoji[item.category] || '🍴'}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <h3 className="font-display font-semibold text-foreground text-sm">{t(item.nameKey)}</h3>
-        <p className="text-xs text-muted-foreground font-body line-clamp-2 mt-0.5">{t(item.descKey)}</p>
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-primary font-bold font-body">${item.price.toFixed(2)}</span>
-          {item.available ? (
-            cartQty > 0 ? (
-              <div className="flex items-center gap-2">
-                <button onClick={() => updateCartQuantity(item.id, cartQty - 1)} className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center">
-                  <Minus className="h-3 w-3" />
-                </button>
-                <span className="text-sm font-semibold font-body w-5 text-center">{cartQty}</span>
-                <button onClick={() => onAdd(item)} className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center">
-                  <Plus className="h-3 w-3 text-primary-foreground" />
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => onAdd(item)} className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center shadow-md">
-                <Plus className="h-4 w-4 text-primary-foreground" />
-              </button>
-            )
-          ) : (
-            <span className="text-xs text-destructive font-body">{t('unavailable')}</span>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-const Menu = () => {
-  const [activeCategory, setActiveCategory] = useState('All');
-  const { addToCart, cart, cartCount, cartTotal, user, currentTable, menuItems } = useAppState();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-
-  const filtered = activeCategory === 'All' ? menuItems : menuItems.filter(i => i.category === activeCategory);
-  const getCartQty = (id: string) => cart.find(c => c.menuItem.id === id)?.quantity || 0;
-
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="gradient-primary px-4 pt-6 pb-4">
+    <div className="min-h-screen bg-gray-50 pb-24">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-4 pt-6 pb-4">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-primary-foreground font-display text-lg font-bold">CafeNova</h1>
-            {currentTable && (
-              <span className="text-primary-foreground/70 text-xs font-body">{currentTable.name}</span>
+            <h1 className="text-white text-xl font-bold">CafeNova</h1>
+            {user && (
+              <p className="text-white/80 text-sm">Welcome, {user.full_name}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <LanguageToggle className="bg-foreground/10 text-primary-foreground border-none" />
             {user && (
-              <div className="flex items-center gap-2 bg-foreground/10 rounded-full px-3 py-1.5">
-                <Award className="h-4 w-4 text-gold" />
-                <span className="text-primary-foreground text-xs font-body font-semibold">{user.points} {t('pts')}</span>
+              <div className="flex items-center gap-1 bg-white/20 rounded-full px-3 py-1.5">
+                <Star className="h-4 w-4 text-yellow-300" />
+                <span className="text-white text-sm font-semibold">{user.points} pts</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${getLevelColor(user.customer_level)}`}>
+                  {user.customer_level.toUpperCase()}
+                </span>
               </div>
             )}
+            <button onClick={logout} className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+              <LogOut className="h-4 w-4 text-white" />
+            </button>
           </div>
         </div>
-        <p className="text-primary-foreground/80 text-sm font-body">
-          {t('welcomeUser')}{user ? `, ${user.name}` : ''}! 👋
-        </p>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search menu..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white text-gray-800 placeholder-gray-400"
+          />
+        </div>
       </div>
 
-      <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar">
+      {/* Categories */}
+      <div className="px-4 py-3 flex gap-2 overflow-x-auto">
         {CATEGORIES.map(cat => (
           <button
             key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={`px-4 py-2 rounded-full text-sm font-body font-medium whitespace-nowrap transition-all ${
-              activeCategory === cat
-                ? 'gradient-primary text-primary-foreground shadow-md'
-                : 'bg-secondary text-secondary-foreground'
+            onClick={() => setCategory(cat)}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+              category === cat
+                ? 'bg-amber-500 text-white shadow-lg'
+                : 'bg-white text-gray-600 shadow'
             }`}
           >
-            {t(CATEGORY_KEYS[cat] as TranslationKey)}
+            {cat}
           </button>
         ))}
       </div>
 
-      {/* Top Ad Banner */}
-      <div className="px-4 mt-2">
-        <AdBanner position="top" />
-      </div>
-
-      <div className="px-4 space-y-3 mt-3">
+      {/* Menu Items */}
+      <div className="px-4 space-y-3">
         <AnimatePresence mode="popLayout">
-          {filtered.map((item, index) => (
-            <React.Fragment key={item.id}>
-              <MenuItemCard item={item} onAdd={addToCart} cartQty={getCartQty(item.id)} />
-              {/* Middle Ad Banner after 4th item */}
-              {index === 3 && (
-                <AdBanner position="middle" />
-              )}
-            </React.Fragment>
-          ))}
+          {filteredItems.map(item => {
+            const qty = getCartQty(item.id);
+            return (
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`bg-white rounded-2xl p-4 shadow-sm flex gap-4 ${!item.is_active ? 'opacity-50' : ''}`}
+              >
+                <img
+                  src={item.image_url}
+                  alt={item.name}
+                  className="w-20 h-20 rounded-xl object-cover"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                  {item.name_ar && <p className="text-sm text-gray-500">{item.name_ar}</p>}
+                  <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-amber-600 font-bold">${item.price.toFixed(2)}</span>
+                    {item.is_active ? (
+                      qty > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateCartQuantity(item.id, qty - 1)}
+                            className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <span className="w-6 text-center font-semibold">{qty}</span>
+                          <button
+                            onClick={() => addToCart(item)}
+                            className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center"
+                          >
+                            <Plus className="h-4 w-4 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => addToCart(item)}
+                          className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center shadow-lg"
+                        >
+                          <Plus className="h-4 w-4 text-white" />
+                        </button>
+                      )
+                    ) : (
+                      <span className="text-xs text-red-500">Unavailable</span>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
+        
+        {filteredItems.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-400">No items found</p>
+          </div>
+        )}
       </div>
 
-      {/* Bottom Ad Banner */}
-      <div className="px-4 mt-3 mb-4">
-        <AdBanner position="bottom" />
-      </div>
-
+      {/* Cart Button */}
       {cartCount > 0 && (
         <motion.div
           initial={{ y: 100 }}
           animate={{ y: 0 }}
-          className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent"
+          className="fixed bottom-4 left-4 right-4"
         >
           <Button
             onClick={() => navigate('/cart')}
-            className="w-full gradient-primary text-primary-foreground h-14 rounded-2xl font-body font-semibold text-base shadow-xl flex items-center justify-between px-6"
+            className="w-full h-14 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold rounded-2xl shadow-xl flex items-center justify-between px-6"
           >
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              <span>{cartCount} {t('items')}</span>
+              <span>{cartCount} items</span>
             </div>
             <span>${cartTotal.toFixed(2)}</span>
           </Button>
@@ -155,6 +178,4 @@ const Menu = () => {
       )}
     </div>
   );
-};
-
-export default Menu;
+}

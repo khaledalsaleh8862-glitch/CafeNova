@@ -1,48 +1,50 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Phone, User, ChevronRight, Star, Crown, Sparkles } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { Phone, User, ChevronRight, Star, Shield, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useLanguage } from '@/context/LanguageContext';
+import { useApp } from '@/context/AppContext';
 
-const Login = () => {
-  const { login, isLoading } = useAuth();
-  const { t } = useLanguage();
-  const [phone, setPhone] = useState('');
+export default function Login() {
+  const { tableId } = useParams();
+  const navigate = useNavigate();
+  const { login, currentTable, setCurrentTable } = useApp();
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!phone.trim()) {
-      setError(t('phoneRequired'));
-      return;
-    }
+    
     if (!name.trim()) {
-      setError(t('nameRequired'));
+      setError('Please enter your name');
       return;
     }
-
+    if (!phone.trim()) {
+      setError('Please enter your phone number');
+      return;
+    }
+    
+    setIsLoading(true);
     try {
       await login(phone.trim(), name.trim());
+      if (tableId) {
+        navigate(`/menu`);
+      } else {
+        navigate(`/menu`);
+      }
     } catch (err) {
-      setError(t('loginError'));
+      setError('Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const getUserLevel = (): { level: string; icon: React.ReactNode; color: string } => {
-    return {
-      level: t('new'),
-      icon: <Sparkles className="h-5 w-5" />,
-      color: 'text-muted-foreground',
-    };
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex flex-col items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -52,47 +54,47 @@ const Login = () => {
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            className="w-20 h-20 rounded-3xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg"
+            className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mx-auto mb-4 shadow-xl"
           >
-            <span className="text-4xl">☕</span>
+            <Coffee className="h-12 w-12 text-white" />
           </motion.div>
-          <h1 className="text-3xl font-display font-bold text-foreground mb-2">CafeNova</h1>
-          <p className="text-muted-foreground font-body">{t('welcomeMessage')}</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">CafeNova</h1>
+          <p className="text-gray-600">Smart Cafeteria Ordering</p>
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-card rounded-3xl p-6 space-y-5"
+          className="bg-white rounded-3xl p-6 shadow-xl"
         >
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-body font-medium text-foreground flex items-center gap-2">
-                <User className="h-4 w-4 text-primary" />
-                {t('yourName')}
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <User className="h-4 w-4 text-amber-600" />
+                Your Name
               </label>
               <Input
                 type="text"
-                placeholder={t('enterYourName')}
+                placeholder="Enter your full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-12 rounded-xl bg-background/50 border-2 focus:border-primary transition-colors font-body"
+                className="h-12 rounded-xl border-2 border-gray-200 focus:border-amber-500 transition-colors"
                 disabled={isLoading}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-body font-medium text-foreground flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary" />
-                {t('phoneNumber')}
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Phone className="h-4 w-4 text-amber-600" />
+                Phone Number
               </label>
               <Input
                 type="tel"
-                placeholder={t('enterPhoneNumber')}
+                placeholder="Enter your phone number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="h-12 rounded-xl bg-background/50 border-2 focus:border-primary transition-colors font-body"
+                className="h-12 rounded-xl border-2 border-gray-200 focus:border-amber-500 transition-colors"
                 disabled={isLoading}
               />
             </div>
@@ -101,7 +103,7 @@ const Login = () => {
               <motion.p
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-sm text-destructive font-body"
+                className="text-sm text-red-500"
               >
                 {error}
               </motion.p>
@@ -110,38 +112,27 @@ const Login = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 gradient-primary text-primary-foreground font-body font-semibold rounded-xl text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold rounded-xl shadow-lg transition-all"
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {t('continue')}
+                  Continue
                   <ChevronRight className="h-5 w-5 ml-1" />
                 </>
               )}
             </Button>
           </form>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
+          <div className="mt-6 p-4 bg-amber-50 rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <Star className="h-5 w-5 text-amber-600" />
+              <span className="font-semibold text-gray-800">Loyalty Program</span>
             </div>
-            <div className="relative flex justify-center">
-              <span className="bg-card px-3 text-xs text-muted-foreground font-body">
-                {t('or')}
-              </span>
-            </div>
-          </div>
-
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground font-body">{t('firstTimeUser')}</p>
-            <div className="flex items-center justify-center gap-2 p-3 bg-muted/30 rounded-xl">
-              <Star className="h-4 w-4 text-primary" />
-              <p className="text-sm font-body text-foreground">
-                {t('earnPointsWithOrders')}
-              </p>
-            </div>
+            <p className="text-sm text-gray-600">
+              Earn 1 point for every $1 spent! Redeem points for discounts.
+            </p>
           </div>
         </motion.div>
 
@@ -151,13 +142,11 @@ const Login = () => {
           transition={{ delay: 0.3 }}
           className="mt-6 text-center"
         >
-          <p className="text-xs text-muted-foreground font-body">
-            {t('byContinuing')}
+          <p className="text-xs text-gray-500">
+            By continuing, you agree to our Terms & Privacy Policy
           </p>
         </motion.div>
       </motion.div>
     </div>
   );
-};
-
-export default Login;
+}

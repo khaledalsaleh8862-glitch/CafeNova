@@ -1,71 +1,110 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import type { User, CartItem, MenuItem, Order, Table } from '@/types';
-import { SAMPLE_MENU } from '@/data/sampleData';
-import { menuService, orderService as dbOrderService } from '@/lib/database';
-import { useAuth } from './AuthContext';
+import type { User, Table, MenuItem, Order, CartItem, Invoice } from '../types';
+import { userService, tableService, menuService, orderService } from '../lib/services';
 
 interface AppState {
-  cart: CartItem[];
+  // User
+  user: User | null;
+  isLoading: boolean;
+  setUser: (user: User | null) => void;
+  
+  // Table
   currentTable: Table | null;
-  menuItems: MenuItem[];
-  orders: Order[];
   setCurrentTable: (table: Table | null) => void;
+  
+  // Menu
+  menuItems: MenuItem[];
+  loadMenu: () => Promise<void>;
+  
+  // Cart
+  cart: CartItem[];
   addToCart: (item: MenuItem) => void;
   removeFromCart: (itemId: string) => void;
   updateCartQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   cartTotal: number;
   cartCount: number;
-  addOrder: (order: Order) => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  refreshOrders: () => Promise<void>;
-  refreshMenu: () => Promise<void>;
+  
+  // Orders
+  orders: Order[];
+  loadOrders: () => Promise<void>;
+  placeOrder: () => Promise<{ order: Order; invoice: Invoice }>;
+  
+  // Auth
+  login: (phone: string, name: string) => Promise<void>;
+  logout: () => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
 
-export const useAppState = () => {
+export const useApp = () => {
   const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useAppState must be used within AppProvider');
+  if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
 };
 
+const USER_KEY = 'cafenova_user_phone';
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentTable, setCurrentTable] = useState<Table | null>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([...SAMPLE_MENU] as MenuItem[]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const refreshMenu = useCallback(async () => {
+  const loadMenu = useCallback(async () => {
     try {
-      const items = await menuService.getAll();
-      if (items.length > 0) setMenuItems(items);
+      const items = await menuService.getActive();
+      setMenuItems(items);
     } catch (err) {
       console.error('Failed to load menu:', err);
     }
   }, []);
 
-  const refreshOrders = useCallback(async () => {
+  const loadOrders = useCallback(async () => {
+    if (!user) return;
     try {
-      if (user?.id) {
-        const data = await dbOrderService.getByCustomerId(user.id);
-        setOrders(data);
-      }
+      const userOrders = await orderService.getByUser(user.id);
+      setOrders(userOrders);
     } catch (err) {
       console.error('Failed to load orders:', err);
     }
-  }, [user?.id]);
+  }, [user]);
 
   useEffect(() => {
-    refreshMenu();
-  }, [refreshMenu]);
+    const storedPhone = localStorage.getItem(USER_KEY);
+    if (storedPhone) {
+      userService.findOrCreate(storedPhone, '').then(u => {
+        if (u) setUser(u);
+      }).finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
+    loadMenu();
+  }, [loadMenu]);
 
   useEffect(() => {
     if (user) {
-      refreshOrders();
+      loadOrders();
     }
-  }, [user, refreshOrders]);
+  }, [user, loadOrders]);
+
+  const login = async (phone: string, name: string) => {
+    setIsLoading(true);
+    try {
+      const newUser = await userService.findOrCreate(phone, name);
+      setUser(newUser);
+      localStorage.setItem(USER_KEY, phone);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem(USER_KEY);
+  };
 
   const addToCart = useCallback((item: MenuItem) => {
     setCart(prev => {
@@ -94,20 +133,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const cartTotal = cart.reduce((sum, c) => sum + c.menuItem.price * c.quantity, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
 
-  const addOrder = useCallback((order: Order) => {
-    setOrders(prev => [order, ...prev]);
-  }, []);
-
-  const updateOrderStatus = useCallback((orderId: string, status: Order['status']) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-  }, []);
+  const placeOrder = async (): Promise<{ order: Order; invoice: Invoice }> => {
+    if (!user || !currentTable) throw new Error('Missing user or table');
+    
+    const result = await orderService.create({
+      userId: user.id,
+      userName: user.full_name,
+      phoneNumber: user.phone_number,
+      tableId: currentTable.id,
+      tableNumber: currentTable.table_number,
+      items: cart.map(c => ({ menuItem: c.menuItem, quantity: c.quantity })),
+      subtotal: cartTotal,
+      discount: 0,
+      total: cartTotal,
+    });
+    
+    clearCart();
+    await loadOrders();
+    const updatedUser = await userService.getById(user.id);
+    if (updatedUser) setUser(updatedUser);
+    
+    return result;
+  };
 
   return (
     <AppContext.Provider value={{
-      cart, currentTable, menuItems, orders,
-      setCurrentTable, addToCart, removeFromCart,
-      updateCartQuantity, clearCart, cartTotal, cartCount,
-      addOrder, updateOrderStatus, refreshOrders, refreshMenu,
+      user, isLoading, setUser,
+      currentTable, setCurrentTable,
+      menuItems, loadMenu,
+      cart, addToCart, removeFromCart, updateCartQuantity, clearCart, cartTotal, cartCount,
+      orders, loadOrders, placeOrder,
+      login, logout,
     }}>
       {children}
     </AppContext.Provider>
