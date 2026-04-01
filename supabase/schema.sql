@@ -10,7 +10,7 @@ drop table if exists order_items cascade;
 drop table if exists orders cascade;
 drop table if exists ads cascade;
 drop table if exists menu_items cascade;
-drop table if exists tables cascade;
+drop table if exists restaurant_tables cascade;
 drop table if exists users cascade;
 
 -- =====================================================
@@ -31,9 +31,9 @@ create table users (
 );
 
 -- =====================================================
--- TABLES TABLE
+-- RESTAURANT TABLES TABLE
 -- =====================================================
-create table tables (
+create table restaurant_tables (
   id uuid primary key default gen_random_uuid(),
   table_number text not null unique,
   qr_code text not null unique,
@@ -66,7 +66,7 @@ create table orders (
   user_id uuid references users(id) on delete set null,
   user_name text not null,
   phone_number text,
-  table_id uuid references tables(id) on delete set null,
+  table_id uuid references restaurant_tables(id) on delete set null,
   table_number text not null,
   status text default 'pending' check (status in ('pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled')),
   subtotal numeric(10, 2) not null,
@@ -154,7 +154,7 @@ $$ language plpgsql security definer;
 -- ROW LEVEL SECURITY (Disabled for development)
 -- =====================================================
 alter table users disable row level security;
-alter table tables disable row level security;
+alter table restaurant_tables disable row level security;
 alter table menu_items disable row level security;
 alter table orders disable row level security;
 alter table order_items disable row level security;
@@ -169,9 +169,9 @@ insert into users (full_name, phone_number, role, customer_level)
 values ('Admin', 'admin', 'admin', 'vip');
 
 -- =====================================================
--- SAMPLE DATA - TABLES
+-- SAMPLE DATA - RESTAURANT TABLES
 -- =====================================================
-insert into tables (table_number, qr_code, qr_link, status) values
+insert into restaurant_tables (table_number, qr_code, qr_link, status) values
 ('1', 'qr_1', '/table/1', 'available'),
 ('2', 'qr_2', '/table/2', 'available'),
 ('3', 'qr_3', '/table/3', 'available'),
@@ -209,7 +209,7 @@ insert into ads (title, description, image_url, type, position, start_date, end_
 -- =====================================================
 -- VERIFICATION
 -- =====================================================
-select 'Users: ' || count(*) from users;
-select 'Tables: ' || count(*) from tables;
-select 'Menu Items: ' || count(*) from menu_items;
-select 'Ads: ' || count(*) from ads;
+select 'Users: ' || count(*) as result from users;
+select 'Tables: ' || count(*) as result from restaurant_tables;
+select 'Menu Items: ' || count(*) as result from menu_items;
+select 'Ads: ' || count(*) as result from ads;

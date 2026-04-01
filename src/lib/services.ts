@@ -130,21 +130,21 @@ export const userService = {
 export const tableService = {
   async getAll(): Promise<Table[]> {
     const { data } = await supabase
-      .from('tables')
+      .from('restaurant_tables')
       .select('*')
       .order('table_number');
     return data || [];
   },
 
   async getById(id: string): Promise<Table | null> {
-    const { data } = await supabase.from('tables').select('*').eq('id', id).single();
+    const { data } = await supabase.from('restaurant_tables').select('*').eq('id', id).single();
     return data;
   },
 
   async create(tableData: { table_number: string }): Promise<Table> {
     const qrLink = `/table/${tableData.table_number}`;
     const { data, error } = await supabase
-      .from('tables')
+      .from('restaurant_tables')
       .insert({
         table_number: tableData.table_number,
         qr_code: `qr_${Date.now()}`,
@@ -159,7 +159,7 @@ export const tableService = {
 
   async update(id: string, updates: Partial<Table>): Promise<Table> {
     const { data } = await supabase
-      .from('tables')
+      .from('restaurant_tables')
       .update(updates)
       .eq('id', id)
       .select()
@@ -168,11 +168,11 @@ export const tableService = {
   },
 
   async updateStatus(id: string, status: TableStatus): Promise<void> {
-    await supabase.from('tables').update({ status }).eq('id', id);
+    await supabase.from('restaurant_tables').update({ status }).eq('id', id);
   },
 
   async delete(id: string): Promise<void> {
-    await supabase.from('tables').delete().eq('id', id);
+    await supabase.from('restaurant_tables').delete().eq('id', id);
   },
 };
 
