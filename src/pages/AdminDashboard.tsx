@@ -11,6 +11,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import LanguageToggle from '@/components/LanguageToggle';
 import AdminMenuTab from '@/components/admin/AdminMenuTab';
 import AdminTablesTab from '@/components/admin/AdminTablesTab';
+import AdminAdsTab from '@/components/admin/AdminAdsTab';
 import type { Order, Ad } from '@/types';
 import type { TranslationKey } from '@/i18n/translations';
 
@@ -247,81 +248,7 @@ const AdminDashboard = () => {
 
         {activeTab === 'menu' && <AdminMenuTab />}
 
-        {activeTab === 'ads' && (
-          <div className="space-y-4">
-            {!showAdForm && (
-              <Button
-                onClick={() => setShowAdForm(true)}
-                className="w-full gradient-primary text-primary-foreground font-body rounded-xl gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                {t('addAd')}
-              </Button>
-            )}
-
-            {showAdForm && (
-              <AdForm
-                onSave={(data) => {
-                  addAd(data);
-                  setShowAdForm(false);
-                }}
-                onCancel={() => setShowAdForm(false)}
-              />
-            )}
-
-            {ads.length === 0 && !showAdForm ? (
-              <div className="text-center py-16">
-                <Megaphone className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground font-body">{t('noAdsYet')}</p>
-                <p className="text-muted-foreground/60 font-body text-sm mt-1">{t('addFirstAd')}</p>
-              </div>
-            ) : (
-              ads.map(ad => {
-                const isActive = ad.start_date <= now && ad.end_date >= now;
-                return (
-                  <motion.div key={ad.id} layout className="glass-card rounded-2xl overflow-hidden">
-                    <img src={ad.image_url} alt={ad.title} className="w-full h-28 object-cover" loading="lazy" width={1200} height={512} />
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-display font-semibold text-sm truncate flex-1">{ad.title}</h3>
-                        <div className="flex items-center gap-2 ms-2">
-                          <span className={`text-[10px] font-body px-2 py-0.5 rounded-full ${
-                            isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                          }`}>
-                            {isActive ? t('active') : t('expired')}
-                          </span>
-                          <span className={`text-[10px] font-body px-2 py-0.5 rounded-full ${
-                            ad.type === 'internal' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'
-                          }`}>
-                            {t(ad.type)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground font-body">
-                        <div className="flex items-center gap-4">
-                          <span className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" /> {ad.views} {t('views')}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MousePointerClick className="h-3 w-3" /> {ad.clicks} {t('clicks')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="capitalize">{t(ad.position as TranslationKey)}</span>
-                          <span>•</span>
-                          <button onClick={() => deleteAd(ad.id)} className="text-destructive hover:text-destructive/80">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })
-            )}
-          </div>
-        )}
+        {activeTab === 'ads' && <AdminAdsTab />}
 
         {activeTab === 'stats' && (
           <div className="space-y-4">
