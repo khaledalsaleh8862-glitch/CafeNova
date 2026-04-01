@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { QRCodeSVG } from 'qrcode.react';
 import LanguageToggle from '@/components/LanguageToggle';
 import AdminMenuTab from '@/components/admin/AdminMenuTab';
+import AdminTablesTab from '@/components/admin/AdminTablesTab';
 import type { Order, Ad } from '@/types';
 import type { TranslationKey } from '@/i18n/translations';
 
@@ -242,43 +243,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'tables' && (
-          <div>
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {SAMPLE_TABLES.map(table => (
-                <button
-                  key={table.id}
-                  onClick={() => setSelectedTable(selectedTable === table.id ? null : table.id)}
-                  className={`glass-card rounded-xl p-3 text-center transition-all ${
-                    selectedTable === table.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                >
-                  <QrCode className="h-6 w-6 mx-auto mb-1 text-primary" />
-                  <span className="text-xs font-body font-medium">{t('table')} {table.id}</span>
-                </button>
-              ))}
-            </div>
-            {selectedTable && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card rounded-2xl p-6 text-center"
-              >
-                <h3 className="font-display font-semibold mb-4">{t('table')} {selectedTable} - {t('qrCode')}</h3>
-                <div className="bg-background p-4 rounded-xl inline-block">
-                  <QRCodeSVG
-                    value={`${window.location.origin}/table/${selectedTable}`}
-                    size={180}
-                    fgColor="hsl(25, 40%, 15%)"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground font-body mt-3">
-                  {t('scanToOpen')} - {t('table')} {selectedTable}
-                </p>
-              </motion.div>
-            )}
-          </div>
-        )}
+        {activeTab === 'tables' && <AdminTablesTab />}
 
         {activeTab === 'menu' && <AdminMenuTab />}
 
