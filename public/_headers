@@ -1,5 +1,6 @@
 /*
-  Content-Security-Policy: default-src 'self' https://cqfxcwgnqlrrecnhvlph.supabase.co; img-src 'self' data: blob: https://images.unsplash.com https://picsum.photos https://*.supabase.co; connect-src 'self' https://cqfxcwgnqlrrecnhvlph.supabase.co wss://cqfxcwgnqlrrecnhvlph.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self'; worker-src 'self' blob:
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src * data: blob:; connect-src 'self' https://cqfxcwgnqlrrecnhvlph.supabase.co wss://cqfxcwgnqlrrecnhvlph.supabase.co https://cqfxcwgnqlrrecnhvlph.supabase.co; frame-src 'self'; worker-src 'self' blob:; 
   X-Content-Type-Options: nosniff
   X-Frame-Options: ALLOWALL
+  Referrer-Policy: no-referrer-when-downgrade
 */
