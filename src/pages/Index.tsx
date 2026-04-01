@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Coffee, QrCode, ArrowRight, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import LanguageToggle from '@/components/LanguageToggle';
 import logo from '@/assets/logo.png';
 import heroCafe from '@/assets/hero-cafe.jpg';
@@ -10,6 +12,13 @@ import heroCafe from '@/assets/hero-cafe.jpg';
 const Index = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/menu');
+    }
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -58,11 +67,11 @@ const Index = () => {
           className="space-y-3 w-full max-w-xs"
         >
           <Button
-            onClick={() => navigate('/table/1')}
+            onClick={() => navigate('/menu')}
             className="w-full gradient-primary text-primary-foreground h-14 rounded-2xl font-body font-semibold text-base shadow-xl gap-2"
           >
             <QrCode className="h-5 w-5" />
-            {t('tryDemo')}
+            {t('orderNow')}
             <ArrowRight className="h-4 w-4" />
           </Button>
 

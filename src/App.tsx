@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AdsProvider } from "@/context/AdsContext";
+import { AuthProvider } from "@/context/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Menu from "./pages/Menu";
@@ -19,22 +20,24 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <TooltipProvider>
-        <AppProvider>
-          <AdsProvider>
-            <Toaster />
-            <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/table/:tableId" element={<Login />} />
-              <Route path="/menu" element={<Menu />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-          </AdsProvider>
-        </AppProvider>
+        <AuthProvider>
+          <AppProvider>
+            <AdsProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/table/:tableId" element={<Login />} />
+                  <Route path="/menu" element={<Menu />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </AdsProvider>
+          </AppProvider>
+        </AuthProvider>
       </TooltipProvider>
     </LanguageProvider>
   </QueryClientProvider>

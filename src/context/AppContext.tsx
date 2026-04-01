@@ -1,14 +1,14 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { User, CartItem, MenuItem, Order, Table } from '@/types';
-import { SAMPLE_MENU, type LocalizedMenuItem } from '@/data/sampleData';
+import { SAMPLE_MENU } from '@/data/sampleData';
+import { menuService, orderService as dbOrderService } from '@/lib/database';
+import { useAuth } from './AuthContext';
 
 interface AppState {
-  user: User | null;
   cart: CartItem[];
   currentTable: Table | null;
+  menuItems: MenuItem[];
   orders: Order[];
-  menuItems: LocalizedMenuItem[];
-  setUser: (user: User | null) => void;
   setCurrentTable: (table: Table | null) => void;
   addToCart: (item: MenuItem) => void;
   removeFromCart: (itemId: string) => void;
@@ -18,9 +18,8 @@ interface AppState {
   cartCount: number;
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  updateMenuItem: (itemId: string, updates: Partial<LocalizedMenuItem>) => void;
-  addMenuItem: (item: LocalizedMenuItem) => void;
-  deleteMenuItem: (itemId: string) => void;
+  refreshOrders: () => Promise<void>;
+  refreshMenu: () => Promise<void>;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -32,11 +31,41 @@ export const useAppState = () => {
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentTable, setCurrentTable] = useState<Table | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([...SAMPLE_MENU] as MenuItem[]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [menuItems, setMenuItems] = useState<LocalizedMenuItem[]>([...SAMPLE_MENU]);
+
+  const refreshMenu = useCallback(async () => {
+    try {
+      const items = await menuService.getAll();
+      if (items.length > 0) setMenuItems(items);
+    } catch (err) {
+      console.error('Failed to load menu:', err);
+    }
+  }, []);
+
+  const refreshOrders = useCallback(async () => {
+    try {
+      if (user?.id) {
+        const data = await dbOrderService.getByCustomerId(user.id);
+        setOrders(data);
+      }
+    } catch (err) {
+      console.error('Failed to load orders:', err);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    refreshMenu();
+  }, [refreshMenu]);
+
+  useEffect(() => {
+    if (user) {
+      refreshOrders();
+    }
+  }, [user, refreshOrders]);
 
   const addToCart = useCallback((item: MenuItem) => {
     setCart(prev => {
@@ -73,24 +102,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
   }, []);
 
-  const updateMenuItem = useCallback((itemId: string, updates: Partial<LocalizedMenuItem>) => {
-    setMenuItems(prev => prev.map(i => i.id === itemId ? { ...i, ...updates } : i));
-  }, []);
-
-  const addMenuItem = useCallback((item: LocalizedMenuItem) => {
-    setMenuItems(prev => [...prev, item]);
-  }, []);
-
-  const deleteMenuItem = useCallback((itemId: string) => {
-    setMenuItems(prev => prev.filter(i => i.id !== itemId));
-  }, []);
-
   return (
     <AppContext.Provider value={{
-      user, cart, currentTable, orders, menuItems,
-      setUser, setCurrentTable, addToCart, removeFromCart,
+      cart, currentTable, menuItems, orders,
+      setCurrentTable, addToCart, removeFromCart,
       updateCartQuantity, clearCart, cartTotal, cartCount,
-      addOrder, updateOrderStatus, updateMenuItem, addMenuItem, deleteMenuItem,
+      addOrder, updateOrderStatus, refreshOrders, refreshMenu,
     }}>
       {children}
     </AppContext.Provider>
