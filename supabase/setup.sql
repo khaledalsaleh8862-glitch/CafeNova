@@ -1,15 +1,26 @@
 -- =====================================================
--- CafeNova Database Setup
+-- CafeNova Database Setup (FIXED)
 -- Run this in Supabase Dashboard > SQL Editor
 -- =====================================================
 
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
+-- First, check what columns exist
+-- If tables exist with wrong schema, we need to recreate
+
+-- =====================================================
+-- DROP EXISTING TABLES (if they exist with wrong schema)
+-- =====================================================
+drop table if exists order_items cascade;
+drop table if exists orders cascade;
+drop table if exists ads cascade;
+drop table if exists points_history cascade;
+drop table if exists menu_items cascade;
+drop table if exists restaurant_tables cascade;
+drop table if exists customers cascade;
 
 -- =====================================================
 -- CUSTOMERS TABLE
 -- =====================================================
-create table if not exists customers (
+create table customers (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   phone text not null unique,
@@ -18,9 +29,20 @@ create table if not exists customers (
 );
 
 -- =====================================================
+-- RESTAURANT TABLES TABLE
+-- =====================================================
+create table restaurant_tables (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  qr_code text not null unique,
+  status text default 'available',
+  created_at timestamp with time zone default now()
+);
+
+-- =====================================================
 -- MENU ITEMS TABLE
 -- =====================================================
-create table if not exists menu_items (
+create table menu_items (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   name_ar text,
@@ -34,20 +56,9 @@ create table if not exists menu_items (
 );
 
 -- =====================================================
--- RESTAURANT TABLES TABLE
--- =====================================================
-create table if not exists restaurant_tables (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  qr_code text not null unique,
-  status text default 'available',
-  created_at timestamp with time zone default now()
-);
-
--- =====================================================
 -- ORDERS TABLE
 -- =====================================================
-create table if not exists orders (
+create table orders (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid references customers(id),
   customer_name text not null,
@@ -65,7 +76,7 @@ create table if not exists orders (
 -- =====================================================
 -- ORDER ITEMS TABLE
 -- =====================================================
-create table if not exists order_items (
+create table order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid references orders(id) on delete cascade,
   menu_item_id uuid references menu_items(id),
@@ -78,7 +89,7 @@ create table if not exists order_items (
 -- =====================================================
 -- ADS TABLE
 -- =====================================================
-create table if not exists ads (
+create table ads (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   image_url text not null,
@@ -96,7 +107,7 @@ create table if not exists ads (
 -- =====================================================
 -- POINTS HISTORY TABLE
 -- =====================================================
-create table if not exists points_history (
+create table points_history (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid references customers(id) on delete cascade,
   points integer not null,
@@ -154,9 +165,7 @@ alter table points_history disable row level security;
 -- =====================================================
 
 -- Admin user
-insert into customers (name, phone, points) 
-values ('Admin', 'admin', 0)
-on conflict (phone) do nothing;
+insert into customers (name, phone, points) values ('Admin', 'admin', 0);
 
 -- Sample tables
 insert into restaurant_tables (name, qr_code, status) values
@@ -165,8 +174,7 @@ insert into restaurant_tables (name, qr_code, status) values
 ('Table 3', '/table/3', 'available'),
 ('Table 4', '/table/4', 'available'),
 ('Table 5', '/table/5', 'available'),
-('VIP Room', '/table/vip', 'available')
-on conflict (qr_code) do nothing;
+('VIP Room', '/table/vip', 'available');
 
 -- Sample menu items
 insert into menu_items (name, name_ar, description, price, image_url, category, available) values
@@ -182,25 +190,23 @@ insert into menu_items (name, name_ar, description, price, image_url, category, 
 ('Cheesecake', 'تشيز كيك', 'Creamy New York style', 8.00, 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400', 'Pastries', true),
 ('Club Sandwich', 'ساندويتش كلوب', 'Triple-decker with chicken', 9.00, 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400', 'Food', true),
 ('Caesar Salad', 'سلطة سيزر', 'Romaine lettuce with caesar dressing', 8.00, 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400', 'Food', true),
-('Grilled Cheese', 'جبنة مشوية', 'Classic grilled cheese sandwich', 6.00, 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400', 'Food', true)
-on conflict do nothing;
+('Grilled Cheese', 'جبنة مشوية', 'Classic grilled cheese sandwich', 6.00, 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400', 'Food', true);
 
 -- Sample ads
 insert into ads (title, image_url, type, start_date, end_date, position, link, active) values
 ('Special Offer!', 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800', 'internal', '2026-01-01', '2027-12-31', 'top', '', true),
-('Buy 1 Get 1 Free', 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800', 'internal', '2026-01-01', '2027-12-31', 'middle', '', true)
-on conflict do nothing;
+('Buy 1 Get 1 Free', 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800', 'internal', '2026-01-01', '2027-12-31', 'middle', '', true);
 
 -- =====================================================
 -- VERIFICATION
 -- =====================================================
-select 'Customers: ' || count(*) from customers;
-select 'Menu Items: ' || count(*) from menu_items;
-select 'Tables: ' || count(*) from restaurant_tables;
-select 'Ads: ' || count(*) from ads;
+select 'Customers: ' || count(*) as result from customers;
+select 'Menu Items: ' || count(*) as result from menu_items;
+select 'Tables: ' || count(*) as result from restaurant_tables;
+select 'Ads: ' || count(*) as result from ads;
 
 -- =====================================================
--- NEXT STEPS:
+-- SUCCESS! Next steps:
 -- 1. Go to Supabase Dashboard > Storage
 -- 2. Create buckets: menu-images, ad-images, profile-images (make them Public)
 -- 3. You're ready to use the app!
